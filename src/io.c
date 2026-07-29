@@ -6,10 +6,6 @@
 Flags *get_flags_from_args(int argc, char **argv, Flags *default_flags){
 	Flags *flags = (Flags *)malloc(sizeof(Flags));
 
-	if (!default_flags){
-		return NULL;
-	}
-
 	memcpy(flags, default_flags, sizeof(Flags));
 
 	for (int i = 0; i < argc; i++){

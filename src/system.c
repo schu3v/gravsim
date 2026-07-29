@@ -4,13 +4,21 @@
 #include "system.h"
 #define KEY_LEN 6
 #define VAL_LEN 64
+#define FMT_LEN 32
+#define STR_LEN 1024
+#define INIT_SYS_LEN 1024
+#define ADD_SYS_LEN 1024
 
 System *read_system_from_file(char *filepath, char isren){
-	char iskey = 1, iscomment = 0;
-	char key[KEY_LEN], value[VAL_LEN];
-	size_t sym_i = 0, body_i = 0;
-	System *sys = (System *)malloc(sizeof(System));
+	static char str[STR_LEN], key[KEY_LEN], val[VAL_LEN], fmt[FMT_LEN];
+	int n_scanned = -1;
+	ssize_t body_i = -1;
 	FILE *file = fopen(filepath, "r");
+	System *sys = calloc(1, sizeof(System));
+	Body *old_bodies = NULL;
+	Body_Ren *old_bodies_ren = NULL;
+
+	snprintf(fmt, FMT_LEN, "%%%ds %%%ds", KEY_LEN - 1, VAL_LEN - 1);
 
 	if (!file || !sys){
 		free(sys);
@@ -19,41 +27,45 @@ System *read_system_from_file(char *filepath, char isren){
 		return NULL;
 	}
 
-	sys->iter = 0;
-	sys->len = 0;
-	sys->G = 1;
-	sys->bodies = NULL;
-	sys->bodies_ren = NULL;
+	sys->len = INIT_SYS_LEN;
+	sys->bodies = malloc(sys->len * sizeof(Body));
 
-	for (int ch = 0; ch != EOF;){
-		ch = fgetc(file);
+	if (isren)
+		sys->bodies_ren = malloc(sys->len * sizeof(Body_Ren));
 
-		if (ch == '#')
-			iscomment = 1;
+	if (!sys->bodies || (!sys->bodies_ren && isren)){
+		free(sys->bodies_ren);
+		free(sys->bodies);
+		free(sys);
+		fclose(file);
 
-		if (ch == '\n')
-			iscomment = 0;
+		return NULL;
+	}
 
-		if ((ch == '\n' || ch == EOF) && sym_i != 0){
-			value[sym_i] = '\0';
-			iskey = 1;
+	while (fgets(str, STR_LEN, file) != NULL){
+		n_scanned = sscanf(str, fmt, key, val);
 
-			if (!strcmp(key, "@iter"))
-				sys->iter = strtoul(value, NULL, 0);
-			
-			else if (!strcmp(key, "@G"))
-				sys->G = strtof(value, NULL);
+		/* Comment or empty string */
+		if (key[0] == '#' || n_scanned == 0 || n_scanned == EOF)
+			continue;
 
-			else if (!strcmp(key, "@len") && sys->len == 0){
-				sys->len = strtoull(value, NULL, 0);
-				sys->bodies = (Body *)malloc(sys->len * sizeof(Body));
+		/* New body */
+		if (key[0] == '%' && n_scanned == 1){
+			body_i++;
+
+			if (body_i >= sys->len){
+				sys->len += ADD_SYS_LEN;
+				old_bodies = sys->bodies;
+				old_bodies_ren = sys->bodies_ren;
 
 				if (isren)
-					sys->bodies_ren = (Body_Ren *)malloc(sys->len * sizeof(Body_Ren));
+					sys->bodies_ren = realloc(sys->bodies_ren, sys->len * sizeof(Body_Ren));
+
+				sys->bodies = realloc(sys->bodies, sys->len * sizeof(Body));
 
 				if (!sys->bodies || (!sys->bodies_ren && isren)){
-					free(sys->bodies);
-					free(sys->bodies_ren);
+					free(sys->bodies_ren ? sys->bodies_ren : old_bodies_ren);
+					free(sys->bodies ? sys->bodies : old_bodies);
 					free(sys);
 					fclose(file);
 
@@ -61,64 +73,81 @@ System *read_system_from_file(char *filepath, char isren){
 				}
 			}
 
-			else if (sys->len == 0){
-				free(sys);
-				fclose(file);
-
-				return NULL;
-			}
-
-			else if (!strcmp(key, "x"))
-				sys->bodies[body_i].x = strtof(value, NULL);
-
-			else if (!strcmp(key, "y"))
-				sys->bodies[body_i].y = strtof(value, NULL);
-
-			else if (!strcmp(key, "vx"))
-				sys->bodies[body_i].vx = strtof(value, NULL);
-
-			else if (!strcmp(key, "vy"))
-				sys->bodies[body_i].vy = strtof(value, NULL);
-
-			else if (!strcmp(key, "m"))
-				sys->bodies[body_i].m = strtof(value, NULL);
-
-			else if (!strcmp(key, "r") && isren)
-				sys->bodies_ren[body_i].radius = strtof(value, NULL);
-
-			else if (!strcmp(key, "rgb") && sym_i == 6 && isren){
-				sys->bodies_ren[body_i].r = convert_hex_char_to_int(value[0]) * 16 +
-					convert_hex_char_to_int(value[1]);
-				sys->bodies_ren[body_i].g = convert_hex_char_to_int(value[2]) * 16 +
-					convert_hex_char_to_int(value[3]);
-				sys->bodies_ren[body_i].b = convert_hex_char_to_int(value[4]) * 16 +
-					convert_hex_char_to_int(value[5]);
-			}
-
-			sym_i = 0;
-		}
-
-		if (ch == ':'){
-			key[sym_i] = '\0';
-			sym_i = 0;
-			iskey = 0;
 			continue;
 		}
 
-		if (ch == ' ' || ch == '\t' || ch == '\n' || iscomment)
+		if (n_scanned < 2){
+			free(sys->bodies_ren);
+			free(sys->bodies);
+			free(sys);
+			fclose(file);
+
+			return NULL;
+		}
+
+		if (!strcmp(key, "@iter")){
+			sys->iter = strtoul(val, NULL, 0);
 			continue;
-
-		if (ch == '%' && body_i + 1 < sys->len){
-			body_i++;
-
+		}
+			
+		else if (!strcmp(key, "@G")){
+			sys->G = strtof(val, NULL);
 			continue;
 		}
 
-		if (iskey && sym_i + 1 < KEY_LEN)
-			key[sym_i++] = (char)ch;
+		if (body_i < 0){
+			free(sys->bodies_ren);
+			free(sys->bodies);
+			free(sys);
+			fclose(file);
 
-		else if (sym_i + 1 < VAL_LEN)
-			value[sym_i++] = (char)ch;
+			return NULL;
+		}
+
+		else if (!strcmp(key, "x"))
+			sys->bodies[body_i].x = (float)atof(val);
+
+		else if (!strcmp(key, "y"))
+			sys->bodies[body_i].y = (float)atof(val);
+
+		else if (!strcmp(key, "vx"))
+			sys->bodies[body_i].vx = (float)atof(val);
+
+		else if (!strcmp(key, "vy"))
+			sys->bodies[body_i].vy = (float)atof(val);
+
+		else if (!strcmp(key, "m"))
+			sys->bodies[body_i].m = (float)atof(val);
+
+		else if (!strcmp(key, "r") && isren)
+			sys->bodies_ren[body_i].radius = (float)atof(val);
+
+		else if (!strcmp(key, "rgb") && isren){
+			sys->bodies_ren[body_i].r = convert_hex_char_to_int(val[0]) * 16 +
+				convert_hex_char_to_int(val[1]);
+			sys->bodies_ren[body_i].g = convert_hex_char_to_int(val[2]) * 16 +
+				convert_hex_char_to_int(val[3]);
+			sys->bodies_ren[body_i].b = convert_hex_char_to_int(val[4]) * 16 +
+				convert_hex_char_to_int(val[5]);
+		}
+	}
+
+	sys->len = body_i + 1;
+	old_bodies = sys->bodies;
+	old_bodies_ren = sys->bodies_ren;
+
+	if (isren)
+		sys->bodies_ren = realloc(sys->bodies_ren, sys->len * sizeof(Body_Ren));
+
+	sys->bodies = realloc(sys->bodies, sys->len * sizeof(Body));
+
+	if (!sys->bodies || (!sys->bodies_ren && isren)){
+		free(sys->bodies_ren ? sys->bodies_ren : old_bodies_ren);
+		free(sys->bodies ? sys->bodies : old_bodies);
+		free(sys);
+		fclose(file);
+
+		return NULL;
 	}
 
 	fclose(file);
@@ -126,43 +155,38 @@ System *read_system_from_file(char *filepath, char isren){
 	return sys;
 }
 
+
+
 int write_system_to_file(System *sys, char *filepath){
 	FILE *file = fopen(filepath, "w");
 
-	if (!file || !sys){
+	if (!file){
 		fclose(file);
 
 		return 0;
 	}
 
-	fprintf(file, "@iter: %u\n@len: %lu\n@G: %.9f\n\n", sys->iter, sys->len, sys->G);
+	fprintf(file, "@iter %u\n@G %.9f\n\n", sys->iter, sys->G);
 
 	for (size_t i = 0; i < sys->len; i++){
-		if (i != 0)
-			fprintf(file, "%%\n");
-
-		if (sys->bodies){
-			fprintf(
-				file, 
-				"x: %.9f\ny: %.9f\nvx: %.9f\nvy: %.9f\nm: %.9f\n",
-				sys->bodies[i].x, sys->bodies[i].y, 
-				sys->bodies[i].vx, sys->bodies[i].vy, sys->bodies[i].m
-			);
-		}
+		fprintf(
+			file, 
+			"%%\nx %.9f\ny %.9f\nvx %.9f\nvy %.9f\nm %.9f\n",
+			sys->bodies[i].x, sys->bodies[i].y, 
+			sys->bodies[i].vx, sys->bodies[i].vy, sys->bodies[i].m
+		);
 
 		if (sys->bodies_ren){
 			fprintf(
 				file, 
-				"r: %.9f\nrgb: %02X%02X%02X\n",
+				"r %.9f\nrgb %02X%02X%02X\n",
 				sys->bodies_ren[i].radius, sys->bodies_ren[i].r,
 				sys->bodies_ren[i].g, sys->bodies_ren[i].b
 			);
 		}
 	}
 
-	if (fclose(file) == EOF){
-		return 0;
-	}
+	fclose(file);
 
 	return 1;
 }
