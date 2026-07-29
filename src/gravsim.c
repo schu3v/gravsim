@@ -41,7 +41,7 @@ int main(int argc, char *argv[]){
 	shift.x = (float)vp.width / 2.0;
 	shift.y = (float)vp.height / 2.0;
 	estimated = 1000 / flags->fps;
-	sys = read_system_from_file(flags->sys_filepath, flags->isuse_ren_info);
+	sys = read_system(flags->sys_filepath, flags->isuse_ren_info);
 
 	if (!sys)
 		goto cleanup;
@@ -56,7 +56,7 @@ int main(int argc, char *argv[]){
 				save_filepath, SAVE_FILEPATH_SIZE, "%s/%s_%u.conf",
 				flags->save_dir, flags->save_pref, sys->iter
 			);
-			write_system_to_file(sys, save_filepath);
+			write_system(sys, save_filepath);
 		}
 
 		if (flags->exit_iter != 0 && sys->iter == flags->exit_iter)
@@ -107,7 +107,7 @@ int main(int argc, char *argv[]){
 							save_filepath, SAVE_FILEPATH_SIZE, "%s/%s_%u.conf",
 							flags->save_dir, flags->save_pref, sys->iter
 						);
-						write_system_to_file(sys, save_filepath);
+						write_system(sys, save_filepath);
 						break;
 
 					case SDLK_UP:

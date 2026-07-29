@@ -9,7 +9,35 @@
 #define INIT_SYS_LEN 1024
 #define ADD_SYS_LEN 1024
 
-System *read_system_from_file(char *filepath, char isren){
+#define CLEANUP_SYS_AND_RET(sys, file, old_bodies, old_bodies_ren) do {	\
+	free((sys)->bodies_ren ? (sys)->bodies_ren : old_bodies_ren);		\
+	free((sys)->bodies ? (sys)->bodies : old_bodies);					\
+	free(sys); 															\
+	fclose(file); 														\
+	return NULL;														\
+} while(0);
+
+#define REALLOC_SYS(sys, file, old_bodies, old_bodies_ren, isren) do {	\
+	if (old_bodies)														\
+		(old_bodies) = (sys)->bodies;									\
+																		\
+	if (old_bodies_ren)													\
+		(old_bodies_ren) = (sys)->bodies_ren;							\
+																		\
+	(sys)->bodies = realloc((sys)->bodies, (sys)->len * sizeof(Body));	\
+																		\
+	if (isren){															\
+		(sys)->bodies_ren = realloc(									\
+			(sys)->bodies_ren, (sys)->len * sizeof(Body_Ren)			\
+		);																\
+	}																	\
+																		\
+	if (!(sys)->bodies || (!(sys)->bodies_ren && (isren))){				\
+		CLEANUP_SYS_AND_RET(sys, file, old_bodies, old_bodies_ren);		\
+	}																	\
+} while (0);
+
+System *read_system(char *filepath, char isren){
 	static char str[STR_LEN], key[KEY_LEN], val[VAL_LEN], fmt[FMT_LEN];
 	int n_scanned = -1;
 	ssize_t body_i = -1;
@@ -18,8 +46,6 @@ System *read_system_from_file(char *filepath, char isren){
 	Body *old_bodies = NULL;
 	Body_Ren *old_bodies_ren = NULL;
 
-	snprintf(fmt, FMT_LEN, "%%%ds %%%ds", KEY_LEN - 1, VAL_LEN - 1);
-
 	if (!file || !sys){
 		free(sys);
 		fclose(file);
@@ -27,20 +53,10 @@ System *read_system_from_file(char *filepath, char isren){
 		return NULL;
 	}
 
+	snprintf(fmt, FMT_LEN, "%%%ds %%%ds", KEY_LEN - 1, VAL_LEN - 1);
+
 	sys->len = INIT_SYS_LEN;
-	sys->bodies = malloc(sys->len * sizeof(Body));
-
-	if (isren)
-		sys->bodies_ren = malloc(sys->len * sizeof(Body_Ren));
-
-	if (!sys->bodies || (!sys->bodies_ren && isren)){
-		free(sys->bodies_ren);
-		free(sys->bodies);
-		free(sys);
-		fclose(file);
-
-		return NULL;
-	}
+	REALLOC_SYS(sys, file, sys->bodies, sys->bodies_ren, isren);
 
 	while (fgets(str, STR_LEN, file) != NULL){
 		n_scanned = sscanf(str, fmt, key, val);
@@ -55,34 +71,14 @@ System *read_system_from_file(char *filepath, char isren){
 
 			if (body_i >= sys->len){
 				sys->len += ADD_SYS_LEN;
-				old_bodies = sys->bodies;
-				old_bodies_ren = sys->bodies_ren;
-
-				if (isren)
-					sys->bodies_ren = realloc(sys->bodies_ren, sys->len * sizeof(Body_Ren));
-
-				sys->bodies = realloc(sys->bodies, sys->len * sizeof(Body));
-
-				if (!sys->bodies || (!sys->bodies_ren && isren)){
-					free(sys->bodies_ren ? sys->bodies_ren : old_bodies_ren);
-					free(sys->bodies ? sys->bodies : old_bodies);
-					free(sys);
-					fclose(file);
-
-					return NULL;
-				}
+				REALLOC_SYS(sys, file, old_bodies, old_bodies_ren, isren);
 			}
 
 			continue;
 		}
 
 		if (n_scanned < 2){
-			free(sys->bodies_ren);
-			free(sys->bodies);
-			free(sys);
-			fclose(file);
-
-			return NULL;
+			CLEANUP_SYS_AND_RET(sys, file, sys->bodies, sys->bodies_ren);
 		}
 
 		if (!strcmp(key, "@iter")){
@@ -96,12 +92,7 @@ System *read_system_from_file(char *filepath, char isren){
 		}
 
 		if (body_i < 0){
-			free(sys->bodies_ren);
-			free(sys->bodies);
-			free(sys);
-			fclose(file);
-
-			return NULL;
+			CLEANUP_SYS_AND_RET(sys, file, sys->bodies, sys->bodies_ren);
 		}
 
 		else if (!strcmp(key, "x"))
@@ -123,41 +114,24 @@ System *read_system_from_file(char *filepath, char isren){
 			sys->bodies_ren[body_i].radius = (float)atof(val);
 
 		else if (!strcmp(key, "rgb") && isren){
-			sys->bodies_ren[body_i].r = convert_hex_char_to_int(val[0]) * 16 +
-				convert_hex_char_to_int(val[1]);
-			sys->bodies_ren[body_i].g = convert_hex_char_to_int(val[2]) * 16 +
-				convert_hex_char_to_int(val[3]);
-			sys->bodies_ren[body_i].b = convert_hex_char_to_int(val[4]) * 16 +
-				convert_hex_char_to_int(val[5]);
+			sys->bodies_ren[body_i].r = hex_char_to_int(val[0]) * 16 +
+				hex_char_to_int(val[1]);
+			sys->bodies_ren[body_i].g = hex_char_to_int(val[2]) * 16 +
+				hex_char_to_int(val[3]);
+			sys->bodies_ren[body_i].b = hex_char_to_int(val[4]) * 16 +
+				hex_char_to_int(val[5]);
 		}
 	}
 
 	sys->len = body_i + 1;
-	old_bodies = sys->bodies;
-	old_bodies_ren = sys->bodies_ren;
-
-	if (isren)
-		sys->bodies_ren = realloc(sys->bodies_ren, sys->len * sizeof(Body_Ren));
-
-	sys->bodies = realloc(sys->bodies, sys->len * sizeof(Body));
-
-	if (!sys->bodies || (!sys->bodies_ren && isren)){
-		free(sys->bodies_ren ? sys->bodies_ren : old_bodies_ren);
-		free(sys->bodies ? sys->bodies : old_bodies);
-		free(sys);
-		fclose(file);
-
-		return NULL;
-	}
+	REALLOC_SYS(sys, file, old_bodies, old_bodies_ren, isren);
 
 	fclose(file);
 
 	return sys;
 }
 
-
-
-int write_system_to_file(System *sys, char *filepath){
+int write_system(System *sys, char *filepath){
 	FILE *file = fopen(filepath, "w");
 
 	if (!file){
@@ -191,7 +165,7 @@ int write_system_to_file(System *sys, char *filepath){
 	return 1;
 }
 
-int convert_hex_char_to_int(char ch){
+int hex_char_to_int(char ch){
 	if (ch >= '0' && ch <= '9')
 		return ch - '0';
 
