@@ -15,15 +15,11 @@
 	free(sys); 															\
 	fclose(file); 														\
 	return NULL;														\
-} while(0);
+} while(0)
 
 #define REALLOC_SYS(sys, file, old_bodies, old_bodies_ren, isren) do {	\
-	if (old_bodies)														\
-		(old_bodies) = (sys)->bodies;									\
-																		\
-	if (old_bodies_ren)													\
-		(old_bodies_ren) = (sys)->bodies_ren;							\
-																		\
+	(old_bodies) = (sys)->bodies;										\
+	(old_bodies_ren) = (sys)->bodies_ren;								\
 	(sys)->bodies = realloc((sys)->bodies, (sys)->len * sizeof(Body));	\
 																		\
 	if (isren){															\
@@ -32,10 +28,9 @@
 		);																\
 	}																	\
 																		\
-	if (!(sys)->bodies || (!(sys)->bodies_ren && (isren))){				\
+	if (!(sys)->bodies || (!(sys)->bodies_ren && (isren)))				\
 		CLEANUP_SYS_AND_RET(sys, file, old_bodies, old_bodies_ren);		\
-	}																	\
-} while (0);
+} while (0)
 
 System *read_system(char *filepath, char isren){
 	static char str[STR_LEN], key[KEY_LEN], val[VAL_LEN], fmt[FMT_LEN];
@@ -77,9 +72,8 @@ System *read_system(char *filepath, char isren){
 			continue;
 		}
 
-		if (n_scanned < 2){
+		if (n_scanned < 2)
 			CLEANUP_SYS_AND_RET(sys, file, sys->bodies, sys->bodies_ren);
-		}
 
 		if (!strcmp(key, "@iter")){
 			sys->iter = strtoul(val, NULL, 0);
@@ -91,9 +85,8 @@ System *read_system(char *filepath, char isren){
 			continue;
 		}
 
-		if (body_i < 0){
+		if (body_i < 0)
 			CLEANUP_SYS_AND_RET(sys, file, sys->bodies, sys->bodies_ren);
-		}
 
 		else if (!strcmp(key, "x"))
 			sys->bodies[body_i].x = (float)atof(val);
