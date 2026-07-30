@@ -6,8 +6,8 @@
 #include "bodyren.h"
 
 typedef struct System {
-	uint32_t iter;
-	float G;
+	uint64_t iter;
+	double G;
 	size_t len;
 	Body *bodies;
 	Body_Ren *bodies_ren;
@@ -15,6 +15,7 @@ typedef struct System {
 
 System *read_system(char *filepath, char isren);
 int write_system(System *sys, char *filepath);
+void log_bodies(Body *bodies, size_t len);
 int hex_char_to_int(char ch);
 
 #endif

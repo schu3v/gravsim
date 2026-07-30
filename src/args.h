@@ -1,5 +1,5 @@
-#ifndef IO_H
-#define IO_H
+#ifndef ARGS_H
+#define ARGS_H
 
 #include "body.h"
 
@@ -9,7 +9,7 @@
 #define clrscr() printf("\e[1;1H\e[2J")
 #endif
 
-typedef struct Flags {
+typedef struct Args {
 	char ispause;
 	char isdraw;
 	char isuse_ren_info;
@@ -19,17 +19,15 @@ typedef struct Flags {
 	int width;
 	int height;
 	int fps;
-	float scale_step;
-	float move_step;
+	double scale_step;
+	double move_step;
 	size_t fix_i;
 	size_t save_mult_iter;
 	size_t exit_iter;
 	char *sys_filepath;
-	char *save_dir;
 	char *save_pref;
-} Flags;
+} Args;
 
-Flags *get_flags_from_args(int argc, char **argv, Flags *default_flags);
-void log_bodies(Body *bodies, size_t len);
+Args *get_args(int argc, char **argv, Args *default_args);
 
 #endif

@@ -2,18 +2,23 @@
 #include <stdlib.h>
 #include <string.h>
 #include "system.h"
-#define KEY_LEN 6
-#define VAL_LEN 64
-#define FMT_LEN 32
-#define STR_LEN 1024
+#define KEY_SIZE 8
+#define VAL_SIZE 984
+#define FMT_SIZE 32
+#define STR_SIZE 1024
 #define INIT_SYS_LEN 1024
 #define ADD_SYS_LEN 1024
 
 #define CLEANUP_SYS_AND_RET(sys, file, old_bodies, old_bodies_ren) do {	\
-	free((sys)->bodies_ren ? (sys)->bodies_ren : old_bodies_ren);		\
-	free((sys)->bodies ? (sys)->bodies : old_bodies);					\
-	free(sys); 															\
-	fclose(file); 														\
+	if (sys){															\
+		free((sys)->bodies_ren ? (sys)->bodies_ren : old_bodies_ren);	\
+		free((sys)->bodies ? (sys)->bodies : old_bodies);				\
+		free(sys); 														\
+	}																	\
+																		\
+	if (file)															\
+		fclose(file); 													\
+																		\
 	return NULL;														\
 } while(0)
 
@@ -33,7 +38,7 @@
 } while (0)
 
 System *read_system(char *filepath, char isren){
-	static char str[STR_LEN], key[KEY_LEN], val[VAL_LEN], fmt[FMT_LEN];
+	static char str[STR_SIZE], key[KEY_SIZE], val[VAL_SIZE], fmt[FMT_SIZE];
 	int n_scanned = -1;
 	ssize_t body_i = -1;
 	FILE *file = fopen(filepath, "r");
@@ -41,19 +46,15 @@ System *read_system(char *filepath, char isren){
 	Body *old_bodies = NULL;
 	Body_Ren *old_bodies_ren = NULL;
 
-	if (!file || !sys){
-		free(sys);
-		fclose(file);
+	if (!file || !sys)
+		CLEANUP_SYS_AND_RET(sys, file, sys->bodies, sys->bodies_ren);
 
-		return NULL;
-	}
-
-	snprintf(fmt, FMT_LEN, "%%%ds %%%ds", KEY_LEN - 1, VAL_LEN - 1);
+	snprintf(fmt, FMT_SIZE, "%%%ds %%%ds", KEY_SIZE - 1, VAL_SIZE - 1);
 
 	sys->len = INIT_SYS_LEN;
-	REALLOC_SYS(sys, file, sys->bodies, sys->bodies_ren, isren);
+	REALLOC_SYS(sys, file, old_bodies, old_bodies_ren, isren);
 
-	while (fgets(str, STR_LEN, file) != NULL){
+	while (fgets(str, STR_SIZE, file) != NULL){
 		n_scanned = sscanf(str, fmt, key, val);
 
 		/* Comment or empty string */
@@ -76,12 +77,12 @@ System *read_system(char *filepath, char isren){
 			CLEANUP_SYS_AND_RET(sys, file, sys->bodies, sys->bodies_ren);
 
 		if (!strcmp(key, "@iter")){
-			sys->iter = strtoul(val, NULL, 0);
+			sys->iter = strtoull(val, NULL, 0);
 			continue;
 		}
 			
 		else if (!strcmp(key, "@G")){
-			sys->G = strtof(val, NULL);
+			sys->G = atof(val);
 			continue;
 		}
 
@@ -89,22 +90,22 @@ System *read_system(char *filepath, char isren){
 			CLEANUP_SYS_AND_RET(sys, file, sys->bodies, sys->bodies_ren);
 
 		else if (!strcmp(key, "x"))
-			sys->bodies[body_i].x = (float)atof(val);
+			sys->bodies[body_i].x = atof(val);
 
 		else if (!strcmp(key, "y"))
-			sys->bodies[body_i].y = (float)atof(val);
+			sys->bodies[body_i].y = atof(val);
 
 		else if (!strcmp(key, "vx"))
-			sys->bodies[body_i].vx = (float)atof(val);
+			sys->bodies[body_i].vx = atof(val);
 
 		else if (!strcmp(key, "vy"))
-			sys->bodies[body_i].vy = (float)atof(val);
+			sys->bodies[body_i].vy = atof(val);
 
 		else if (!strcmp(key, "m"))
-			sys->bodies[body_i].m = (float)atof(val);
+			sys->bodies[body_i].m = atof(val);
 
 		else if (!strcmp(key, "r") && isren)
-			sys->bodies_ren[body_i].radius = (float)atof(val);
+			sys->bodies_ren[body_i].radius = atof(val);
 
 		else if (!strcmp(key, "rgb") && isren){
 			sys->bodies_ren[body_i].r = hex_char_to_int(val[0]) * 16 +
@@ -115,6 +116,9 @@ System *read_system(char *filepath, char isren){
 				hex_char_to_int(val[5]);
 		}
 	}
+
+	if (body_i < 0)
+		CLEANUP_SYS_AND_RET(sys, file, old_bodies, old_bodies_ren);
 
 	sys->len = body_i + 1;
 	REALLOC_SYS(sys, file, old_bodies, old_bodies_ren, isren);
@@ -133,12 +137,12 @@ int write_system(System *sys, char *filepath){
 		return 0;
 	}
 
-	fprintf(file, "@iter %u\n@G %.9f\n\n", sys->iter, sys->G);
+	fprintf(file, "@iter %lu\n@G %.9lf\n\n", sys->iter, sys->G);
 
 	for (size_t i = 0; i < sys->len; i++){
 		fprintf(
 			file, 
-			"%%\nx %.9f\ny %.9f\nvx %.9f\nvy %.9f\nm %.9f\n",
+			"%%\nx %.9lf\ny %.9lf\nvx %.9lf\nvy %.9lf\nm %.9lf\n",
 			sys->bodies[i].x, sys->bodies[i].y, 
 			sys->bodies[i].vx, sys->bodies[i].vy, sys->bodies[i].m
 		);
@@ -146,7 +150,7 @@ int write_system(System *sys, char *filepath){
 		if (sys->bodies_ren){
 			fprintf(
 				file, 
-				"r %.9f\nrgb %02X%02X%02X\n",
+				"r %.9lf\nrgb %02X%02X%02X\n",
 				sys->bodies_ren[i].radius, sys->bodies_ren[i].r,
 				sys->bodies_ren[i].g, sys->bodies_ren[i].b
 			);
@@ -156,6 +160,15 @@ int write_system(System *sys, char *filepath){
 	fclose(file);
 
 	return 1;
+}
+
+void log_bodies(Body *bodies, size_t len){
+	for (size_t i = 0; i < len; i++){
+		printf("BODY %lu\n", i);
+		printf("\tx: %lf\ty: %lf\n\tvx: %lf\tvy: %lf\n\tm: %lf\n", 
+			bodies[i].x, bodies[i].y, bodies[i].vx, bodies[i].vy, bodies[i].m
+		);
+	}
 }
 
 int hex_char_to_int(char ch){

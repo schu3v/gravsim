@@ -2,20 +2,20 @@
 #include <stddef.h>
 #include "body.h"
 
-void update_vel(Body *bodies, size_t len, float G){
-	float diffx_sqr, diffy_sqr;
-	float r_sqr, F;
+void update_vel(Body *bodies, size_t len, double G){
+	double diffx_sqr, diffy_sqr;
+	double r_sqr, F;
 	Vec2 F_vec;
 
 	for (size_t i = 0; i < len; i++){
 		for (size_t j = i + 1; j < len; j++){
-			diffx_sqr = powf(bodies[j].x - bodies[i].x, 2.0);
-			diffy_sqr = powf(bodies[j].y - bodies[i].y, 2.0);
+			diffx_sqr = pow(bodies[j].x - bodies[i].x, 2.0);
+			diffy_sqr = pow(bodies[j].y - bodies[i].y, 2.0);
 			r_sqr = diffx_sqr + diffy_sqr;
 			F = G * bodies[i].m * bodies[j].m / r_sqr;
 
-			F_vec.x = F * sqrtf(diffx_sqr / r_sqr);
-			F_vec.y = F * sqrtf(diffy_sqr / r_sqr);
+			F_vec.x = F * sqrt(diffx_sqr / r_sqr);
+			F_vec.y = F * sqrt(diffy_sqr / r_sqr);
 
 			if (bodies[i].x > bodies[j].x){
 				F_vec.x *= -1.0;
@@ -33,7 +33,7 @@ void update_vel(Body *bodies, size_t len, float G){
 	}
 }
 
-void update_coords(Body *bodies, size_t len, float G){
+void update_coords(Body *bodies, size_t len, double G){
 	update_vel(bodies, len, G);
 
 	for (size_t i = 0; i < len; i++){

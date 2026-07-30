@@ -3,15 +3,15 @@
 #include "bodyren.h"
 
 void render_body(View_Port *vp, Body *body, Body_Ren *body_ren, 
-	Vec2 shift, float scale)
+	Vec2 *shift, double scale)
 {
-	float x = body->x * scale + shift.x;
-	float y = body->y * scale + shift.y;
-	float r = body_ren->radius * scale;
+	double x = body->x * scale + shift->x;
+	double y = body->y * scale + shift->y;
+	double r = body_ren->radius * scale;
 
 	if (
 		x + r < 0.0 || y + r < 0.0 || 
-		x - r > (float)vp->width || y - r > (float)vp->height
+		x - r > (double)vp->width || y - r > (double)vp->height
 	){
 		return;
 	}
@@ -23,7 +23,7 @@ void render_body(View_Port *vp, Body *body, Body_Ren *body_ren,
 }
 
 void render_bodies(View_Port *vp, Body *bodies, Body_Ren *bodies_ren, 
-	Vec2 shift, float scale, size_t len)
+	Vec2 *shift, double scale, size_t len)
 {
 	for (size_t i = 0; i < len; i++){
 		render_body(vp, bodies + i, bodies_ren + i, shift, scale);
@@ -31,14 +31,14 @@ void render_bodies(View_Port *vp, Body *bodies, Body_Ren *bodies_ren,
 }
 
 size_t get_index_chosen_body(Body *bodies, Body_Ren *bodies_ren, 
-	Vec2 click, float scale, size_t len)
+	Vec2 *click, double scale, size_t len)
 {
 	size_t i = 0;
 
 	while (i < len){
-		if (powf(bodies[i].x * scale - click.x, 2) + 
-			powf(bodies[i].y * scale - click.y, 2) <= 
-			powf(bodies_ren[i].radius * scale, 2)){
+		if (pow(bodies[i].x * scale - click->x, 2) + 
+			pow(bodies[i].y * scale - click->y, 2) <= 
+			pow(bodies_ren[i].radius * scale, 2)){
 			return i;
 		}
 
