@@ -128,7 +128,7 @@ System *read_system(char *filepath, char isren){
 	return sys;
 }
 
-int write_system(System *sys, char *filepath){
+int write_system(System *sys, char *filepath, char isren){
 	FILE *file = fopen(filepath, "w");
 
 	if (!file){
@@ -147,7 +147,7 @@ int write_system(System *sys, char *filepath){
 			sys->bodies[i].vx, sys->bodies[i].vy, sys->bodies[i].m
 		);
 
-		if (sys->bodies_ren){
+		if (isren){
 			fprintf(
 				file, 
 				"r %.9lf\nrgb %02X%02X%02X\n",

@@ -12,23 +12,25 @@ Args *get_args(int argc, char **argv, Args *default_args){
 	memcpy(args, default_args, sizeof(Args));
 
 	for (int i = 0; i < argc; i++){
-		if (!strcmp(argv[i], "-fpause"))
-			args->ispause = 1;
-
-		if (!strcmp(argv[i], "-fnodraw"))
-			args->isdraw = 0;
-
-		if (!strcmp(argv[i], "-fnouseren"))
-			args->isuse_ren_info = 0;
-
-		if (!strcmp(argv[i], "-fnolog"))
-			args->islog = 0;
+		if (!strcmp(argv[i], "-fnolog")){
+			args->islogi = 0;
+			args->islogb = 0;
+		}
 
 		if (!strcmp(argv[i], "-fnologi"))
 			args->islogi = 0;
 
 		if (!strcmp(argv[i], "-fnologb"))
 			args->islogb = 0;
+
+		if (!strcmp(argv[i], "-fnodraw"))
+			args->isdraw = 0;
+
+		if (!strcmp(argv[i], "-fnoreninfo"))
+			args->isuse_ren_info = 0;
+
+		if (!strcmp(argv[i], "-fpause"))
+			args->ispause = 1;
 
 		if (i + 1 >= argc)
 			continue;
@@ -42,10 +44,10 @@ Args *get_args(int argc, char **argv, Args *default_args){
 		if (!strcmp(argv[i], "-fps"))
 			args->fps = atoi(argv[i + 1]);
 
-		if (!strcmp(argv[i], "-ss"))
-			args->scale_step = atof(argv[i + 1]);
+		if (!strcmp(argv[i], "-scale"))
+			args->scale_mult = atof(argv[i + 1]);
 
-		if (!strcmp(argv[i], "-ms"))
+		if (!strcmp(argv[i], "-move"))
 			args->move_step = atof(argv[i + 1]);
 
 		if (!strcmp(argv[i], "-fixi"))

@@ -13,13 +13,12 @@ typedef struct Args {
 	char ispause;
 	char isdraw;
 	char isuse_ren_info;
-	char islog;
 	char islogi;
 	char islogb;
 	int width;
 	int height;
 	int fps;
-	double scale_step;
+	double scale_mult;
 	double move_step;
 	size_t fix_i;
 	size_t save_mult_iter;

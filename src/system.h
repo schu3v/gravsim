@@ -14,7 +14,7 @@ typedef struct System {
 } System;
 
 System *read_system(char *filepath, char isren);
-int write_system(System *sys, char *filepath);
+int write_system(System *sys, char *filepath, char isren);
 void log_bodies(Body *bodies, size_t len);
 int hex_char_to_int(char ch);
 
