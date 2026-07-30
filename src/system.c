@@ -131,13 +131,12 @@ System *read_system(char *filepath, char isren){
 int write_system(System *sys, char *filepath, char isren){
 	FILE *file = fopen(filepath, "w");
 
-	if (!file){
-		fclose(file);
-
+	if (!file)
 		return 0;
-	}
 
-	fprintf(file, "@iter %lu\n@G %.9lf\n\n", sys->iter, sys->G);
+	fprintf(file, "@iter %llu\n@G %.9lf\n\n", 
+		(unsigned long long)sys->iter, sys->G
+	);
 
 	for (size_t i = 0; i < sys->len; i++){
 		fprintf(
@@ -164,7 +163,7 @@ int write_system(System *sys, char *filepath, char isren){
 
 void log_bodies(Body *bodies, size_t len){
 	for (size_t i = 0; i < len; i++){
-		printf("BODY %lu\n", i);
+		printf("BODY %llu\n", (unsigned long long)i);
 		printf("\tx: %lf\ty: %lf\n\tvx: %lf\tvy: %lf\n\tm: %lf\n", 
 			bodies[i].x, bodies[i].y, bodies[i].vx, bodies[i].vy, bodies[i].m
 		);

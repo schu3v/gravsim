@@ -62,6 +62,9 @@ Args *get_args(int argc, char **argv, Args *default_args){
 		if (!strcmp(argv[i], "-sys"))
 			args->sys_filepath = argv[i + 1];
 
+		if (!strcmp(argv[i], "-sdir"))
+			args->save_dir = argv[i + 1];
+
 		if (!strcmp(argv[i], "-spref"))
 			args->save_pref = argv[i + 1];
 	}

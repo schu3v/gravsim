@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -ggdb -lSDL2 -lm -o
+CFLAGS = -Wall -O2 -lSDL2 -lm -o
 TARGET = gravsim
 
 PREF_SRC = src/

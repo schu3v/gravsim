@@ -24,6 +24,7 @@ typedef struct Args {
 	size_t save_mult_iter;
 	size_t exit_iter;
 	char *sys_filepath;
+	char *save_dir;
 	char *save_pref;
 } Args;
 

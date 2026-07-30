@@ -7,7 +7,9 @@
 #include "body.h"
 #include "bodyren.h"
 #include "system.h"
-#define SAVE_FILEPATH_SIZE 256
+#define SAVE_DIR_MAX_LEN 255
+#define SAVE_PREF_MAX_LEN 231
+#define SAVE_FILE_PATH_SIZE 512
 #define MAX_SCALE 4096.0
 #define MIN_SCALE (1.0 / 4096.0)
 #define DEFAULT_RADIUS 3.0
@@ -16,21 +18,25 @@
 #define DEFAULT_B 0xFF
 
 int main(int argc, char *argv[]){
-	Args default_args = {
+	static char save_file_path[SAVE_FILE_PATH_SIZE];
+	static Args default_args = {
 		0, 1, 1, 1, 1, -1, -1, 60, 2.0, 10.0,
-		SIZE_MAX, 0, 0, NULL, "sys_"
+		SIZE_MAX, 0, 0, NULL, "./", "sys_"
 	};
-	Args *args = get_args(argc, argv, &default_args);
-	double scale = 1.0;
 	Uint32 start = 0, elapsed = 0, estimated = 0;
-	size_t new_fix_i = args->fix_i;
+	SDL_Event event;
+	int save_dir_len = -1;
+	double scale = 1.0;
+	size_t new_fix_i;
 	Vec2 click;
 	Vec2 shift = {0, 0};
 	Vec2 movement = {0, 0};
-	View_Port vp;
-	char save_filepath[SAVE_FILEPATH_SIZE];
+	View_Port vp = {-1, -1, NULL, NULL};
+	Args *args = NULL;
 	System *sys = NULL;
-	SDL_Event event;
+
+	args = get_args(argc, argv, &default_args);
+	new_fix_i = args->fix_i;
 
 	if (!args)
 		goto cleanup;
@@ -46,10 +52,17 @@ int main(int argc, char *argv[]){
 	shift.x = (double)vp.width / 2.0;
 	shift.y = (double)vp.height / 2.0;
 	estimated = 1000 / args->fps;
+	save_dir_len = strlen(args->save_dir);
 	sys = read_system(args->sys_filepath, args->isuse_ren_info);
 
 	if (!sys)
 		goto cleanup;
+
+	if (save_dir_len > SAVE_DIR_MAX_LEN || 
+		strlen(args->save_pref) > SAVE_PREF_MAX_LEN)
+	{
+		goto cleanup;
+	}
 
 	if (!sys->bodies || (!sys->bodies_ren && args->isuse_ren_info))
 		goto cleanup;
@@ -68,14 +81,23 @@ int main(int argc, char *argv[]){
 		}
 	}
 
+	if (args->save_dir[save_dir_len - 1] != '/'){
+		if (save_dir_len >= SAVE_DIR_MAX_LEN)
+			goto cleanup;
+
+		args->save_dir[save_dir_len] = '/';
+		args->save_dir[save_dir_len + 1] = '\0';
+		save_dir_len++;
+	}
+
 	for (;; sys->iter++){
 		if (args->save_mult_iter != 0 && sys->iter != 0 && 
 			sys->iter % args->save_mult_iter == 0){
 			snprintf(
-				save_filepath, SAVE_FILEPATH_SIZE, "%s%lu.conf",
-				args->save_pref, sys->iter
+				save_file_path, SAVE_FILE_PATH_SIZE, "%s%s%llu.conf",
+				args->save_dir, args->save_pref, (unsigned long long)sys->iter
 			);
-			write_system(sys, save_filepath, args->isuse_ren_info);
+			write_system(sys, save_file_path, args->isuse_ren_info);
 		}
 
 		if (args->exit_iter != 0 && sys->iter == args->exit_iter)
@@ -103,10 +125,13 @@ int main(int argc, char *argv[]){
 
 					case 'l':
 						snprintf(
-							save_filepath, SAVE_FILEPATH_SIZE, "%s%lu.conf",
-							args->save_pref, sys->iter
+							save_file_path, SAVE_FILE_PATH_SIZE, 
+							"%s%s%llu.conf", args->save_dir, 
+							args->save_pref, (unsigned long long)sys->iter
 						);
-						write_system(sys, save_filepath, args->isuse_ren_info);
+						write_system(
+							sys, save_file_path, args->isuse_ren_info
+						);
 						break;
 
 					case 'w':
@@ -147,7 +172,8 @@ int main(int argc, char *argv[]){
 						click.x = (double)event.button.x - shift.x;
 						click.y = (double)event.button.y - shift.y;
 
-						new_fix_i = get_index_chosen_body(sys->bodies, sys->bodies_ren, 
+						new_fix_i = get_index_chosen_body(
+							sys->bodies, sys->bodies_ren, 
 							&click, scale, sys->len
 						);
 
@@ -178,7 +204,9 @@ int main(int argc, char *argv[]){
 			SDL_SetRenderDrawColor(vp.ren, 0x00, 0x00, 0x00, 0xFF);
 			SDL_RenderClear(vp.ren);
 			SDL_GetRendererOutputSize(vp.ren, &vp.width, &vp.height);
-			render_bodies(&vp, sys->bodies, sys->bodies_ren, &shift, scale, sys->len);
+			render_bodies(&vp, sys->bodies, sys->bodies_ren, 
+				&shift, scale, sys->len
+			);
 			SDL_RenderPresent(vp.ren);
 
 			if (args->ispause){
@@ -190,7 +218,7 @@ int main(int argc, char *argv[]){
 			clrscr();
 
 		if (args->islogi)
-			printf("Iter: %lu\n", sys->iter);
+			printf("Iter: %llu\n", (unsigned long long)sys->iter);
 
 		if (args->islogb)
 			log_bodies(sys->bodies, sys->len);
@@ -212,10 +240,11 @@ cleanup:
 		free(sys);
 	}
 	
-	if (args && args->isdraw){
+	/* vp.width == -1 if vp_init failed or didn't called */
+	if (vp.width != -1)
 		vp_cleanup(&vp);
-		free(args);
-	}
+
+	free(args);
 
 	return 0;
 }
