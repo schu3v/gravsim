@@ -10,6 +10,6 @@ typedef struct View_Port {
 
 int vp_init(View_Port *vp, int width, int height, const char *title);
 void vp_cleanup(View_Port *vp);
-void render_filled_circle(View_Port *vp, float x0, float y0, float r);
+void render_filled_circle(View_Port *vp, double x0, double y0, double r);
 
 #endif

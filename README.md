@@ -20,7 +20,7 @@ What means "system"? System is necessary information for physics calculations an
 - Physics information of body: x, y, vx, vy, m.
 - Rendering information of body: color (RGB) and radius. It's not required if flag ``-fnoreninfo`` specified.
 
-To write a configuration file you may stick next template:
+To write a configuration file you may follow next template:
 
 ```
 @iter 0
@@ -54,7 +54,7 @@ rgb 0000FF
 
 ```
 
-Every configuration file must be correspond to the farther rules:
+Every configuration file must to conform farther rules:
 - Designations (keys): 
 	- @iter - iteration.
 	- @G - gravitational constant (may be decimal fraction).
@@ -72,15 +72,15 @@ When you built gravsim, you can start program from cli. The ``-sys`` option is *
 ``./gravsim -sys path/to/your/system [Another flags and options]``
 
 - ``-sys PATH`` - Path to system configuration file for drawing and calculating. This option is required.
-- ``-sdir DIR`` - Save directory.
-- ``-spref PREF`` - Prefix for configuration save files.
+- ``-sdir DIR`` - Save directory. (default: ``./``).
+- ``-spref PREF`` - Prefix for configuration save files. (default: ``sys_``).
 - ``-siter N`` - Program will automatically save current state in configuration file every N iterations.
-- ``-eiter N`` - Exit iteration. If save iteration (``-siter``) multiple exit iteration, then save will be executed before exit.
-- ``-w N`` - The width of window.
-- ``-h N`` - The height of window.
-- ``-fps N`` - FPS.
-- ``-scale N`` - Scale multiplier.
-- ``-move N`` - Move step.
+- ``-eiter N`` - Exit iteration (save executes before exit). 
+- ``-w N`` - The width of window. (default: full width).
+- ``-h N`` - The height of window. (default: full height).
+- ``-fps N`` - FPS. (default: 60).
+- ``-scale N`` - Scale multiplier. (default: 2.0).
+- ``-move N`` - Move step. (default: 10.0)
 - ``-fixi N`` - The index (starts from 0) of fixed body. This body centered by window.
 - ``-fpause`` - Stop simulation in the beginning.
 - ``-fnodraw`` - Don't create window.
@@ -92,7 +92,7 @@ When you built gravsim, you can start program from cli. The ``-sys`` option is *
 ## Saves
 Specially, I explain how saves works. Every saved file names in such format: ``[PREFIX][ITERATION].conf``, 
 PREFIX defines via ``-spref``, ITERATION is iteration when save done, also you may define save directory via ``-sdir``.
-Sometimes you need in automatically saves, then set number via ``-siter``, and, when number multiple iteration, save will be done automatically.
+Sometimes you need in automatically saves, then set number N via ``-siter``, and saves will be done automatically every N iterations.
 When you or gravsim create save, file will be named in save file format, and this file may be used after.
 
 ## Keyboard and Mouse Control
@@ -100,5 +100,5 @@ When you or gravsim create save, file will be named in save file format, and thi
 - The key l to save.
 - The SPACE key to pause.
 - The ARROW UP/DOWN for scaling.
-- Click on body by left mouse button to fix on body.
+- Click on body by left mouse button to fix on it.
 - Click on right mouse button to reset movement and fixation.

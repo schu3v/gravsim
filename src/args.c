@@ -3,14 +3,7 @@
 #include <string.h>
 #include "args.h"
 
-Args *get_args(int argc, char **argv, Args *default_args){
-	Args *args = malloc(sizeof(Args));
-
-	if (!args)
-		return NULL;
-
-	memcpy(args, default_args, sizeof(Args));
-
+int get_args(Args *args, int argc, char **argv){
 	for (int i = 0; i < argc; i++){
 		if (!strcmp(argv[i], "-fnolog")){
 			args->islogi = 0;
@@ -60,14 +53,14 @@ Args *get_args(int argc, char **argv, Args *default_args){
 			args->exit_iter = strtoull(argv[i + 1], NULL, 0);
 
 		if (!strcmp(argv[i], "-sys"))
-			args->sys_filepath = argv[i + 1];
+			strncpy(args->sys_filepath,argv[i+1],args->sys_filepath_max_len+1);
 
 		if (!strcmp(argv[i], "-sdir"))
-			args->save_dir = argv[i + 1];
+			strncpy(args->save_dir, argv[i + 1], args->save_dir_max_len + 1);
 
 		if (!strcmp(argv[i], "-spref"))
-			args->save_pref = argv[i + 1];
+			strncpy(args->save_pref, argv[i + 1], args->save_pref_max_len + 1);
 	}
 
-	return args;
+	return 1;
 }

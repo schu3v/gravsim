@@ -3,12 +3,6 @@
 
 #include "body.h"
 
-#ifdef _WIN32
-#include <conio.h>
-#else
-#define clrscr() printf("\e[1;1H\e[2J")
-#endif
-
 typedef struct Args {
 	char ispause;
 	char isdraw;
@@ -23,11 +17,14 @@ typedef struct Args {
 	size_t fix_i;
 	size_t save_mult_iter;
 	size_t exit_iter;
+	size_t sys_filepath_max_len; /* no option, specifies inside program */
+	size_t save_dir_max_len; /* no option */
+	size_t save_pref_max_len; /* no option */
 	char *sys_filepath;
 	char *save_dir;
 	char *save_pref;
 } Args;
 
-Args *get_args(int argc, char **argv, Args *default_args);
+int get_args(Args *args, int argc, char **argv);
 
 #endif

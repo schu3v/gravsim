@@ -5,6 +5,8 @@
 #include "body.h"
 #include "bodyren.h"
 
+#define clrscr() printf("\e[1;1H\e[2J")
+
 typedef struct System {
 	uint64_t iter;
 	double G;
@@ -13,7 +15,7 @@ typedef struct System {
 	Body_Ren *bodies_ren;
 } System;
 
-System *read_system(char *filepath, char isren);
+int read_system(System *sys, char *filepath, char isren);
 int write_system(System *sys, char *filepath, char isren);
 void log_bodies(Body *bodies, size_t len);
 int hex_char_to_int(char ch);
