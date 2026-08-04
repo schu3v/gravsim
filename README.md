@@ -23,34 +23,42 @@ What means "system"? System is necessary information for physics calculations an
 To write a configuration file you may follow next template:
 
 ```
-@iter 0
-@G 1
+@iter	0
+@G		1.0
 
 # Bodies
 %
-x 0.0
-y 0.0
-vx 0.0
-vy 0.0
-m 30.0
-r 7
-rgb FFFF00
+x	0.0
+y	0.0
+vx	0.0
+vy	0.0
+r	7
+m	30.0
+rgb	FFFF00
 %
-x 0.0
-y -100.0
-vx -0.4
-vy 0.0
-m 1.0
-r 5
+x	0.0
+y	-100.0
+vx	-0.3
+vy	0.0
+m	1.0
+r	5
 rgb	FF0000
 %
-x 0.0
-y 100.0
-vx 0.5
-vy 0.0
-m 1.0
-r 5
-rgb 0000FF
+x	0.0
+y	150.0
+vx	0.4
+vy	0.0
+m	0.25
+r	3
+rgb	00FF00
+%
+x	0.0
+y	300.0
+vx	0.3
+vy	0.0
+m	1.0
+r	5
+rgb	0000FF
 
 ```
 
